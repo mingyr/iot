@@ -1,0 +1,147 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": ""
+    },
+    "name": "RPC Rule Chain",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null,
+    "externalId": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 316,
+          "layoutY": 68
+        },
+        "type": "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode",
+        "name": "Relate Attribute",
+        "debugMode": false,
+        "configuration": {
+          "relationsQuery": {
+            "fetchLastLevelOnly": false,
+            "direction": "FROM",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "DEVICE"
+                ]
+              }
+            ]
+          },
+          "telemetry": true,
+          "attrMapping": {
+            "state": "state"
+          }
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 314,
+          "layoutY": 212
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbChangeOriginatorNode",
+        "name": "Change RPC Owner",
+        "debugMode": false,
+        "configuration": {
+          "originatorSource": "RELATED",
+          "entityType": null,
+          "entityNamePattern": null,
+          "relationsQuery": {
+            "fetchLastLevelOnly": true,
+            "direction": "FROM",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "DEVICE"
+                ]
+              }
+            ]
+          }
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 315,
+          "layoutY": 372
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Create RPC Message",
+        "debugMode": false,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var newMsg = {}\n\nvar toSendout = false;\n\nnewMsg.method = \"turn\";\n\nif (msg.intensity > 50000)\n{\n    if (metadata.state == \"on\")\n    {\n        newMsg.params = \"off\";\n        toSendout = true;\n    }\n}\nif (msg.intensity < 40000)\n{\n    if (metadata.state == \"off\")\n    {\n        newMsg.params = \"on\";\n        toSendout = true;\n    }\n}\n\nvar newMsgType = toSendout? \"RPC message\": \"Null message\";\n\nreturn {msg: newMsg, metadata: metadata, msgType: newMsgType};\n",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 314,
+          "layoutY": 500
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Double Check RPC Message",
+        "debugMode": true,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.temperature > 20;",
+          "tbelScript": "return msgType == 'RPC message'; "
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 312,
+          "layoutY": 619
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "RPC Call Request",
+        "debugMode": false,
+        "configuration": {
+          "timeoutInSeconds": 60
+        },
+        "externalId": null
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 3,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "True"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
