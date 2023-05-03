@@ -1,3 +1,7 @@
+// Since ThingsBoard Arduino SDK tends to change without warning, 
+// the following code are not guaranteed to work properly in your case.
+// It is just put here for reference and YOU HAVE BEEN WARNED!!!
+
 #include <WiFi.h>
 #include <ThingsBoard.h>
 #include <DHT.h>

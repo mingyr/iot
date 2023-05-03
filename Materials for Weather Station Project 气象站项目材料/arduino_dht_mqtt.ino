@@ -10,9 +10,8 @@
 
 #define DEBUG 1
  
-const char* ssid     = "your-ssid-goes-here"; // ESP32 and ESP8266 uses 2.4GHZ wifi only
-const char* password = "your-password-goes-here"; 
-
+const char* ssid     = "thingsboard"; // ESP32 and ESP8266 uses 2.4GHZ wifi only
+const char* password = "thingsboard"; 
 
 float temp;
 
