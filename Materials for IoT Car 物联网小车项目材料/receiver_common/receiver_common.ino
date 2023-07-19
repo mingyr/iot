@@ -3,29 +3,31 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
+#define DEBUG 0
+#define MAX_MOTOR_SPEED 200
+#define SIGNAL_TIMEOUT 1000  // This is signal timeout in milli seconds. We will reset the data if no signal
+
 // Using GPIO 21 for SDA, using GPIO 22 for SCL
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 const int enablePin = 18;
 
-//Right motor
-const int enableRightMotor = 25;
-const int rightMotorPin1   = 26;
-const int rightMotorPin2   = 27;
 //Left motor
 const int enableLeftMotor  = 15;
 const int leftMotorPin1    = 16;
 const int leftMotorPin2    = 17;
 
-#define MAX_MOTOR_SPEED 200
+//Right motor
+const int enableRightMotor = 25;
+const int rightMotorPin1   = 26;
+const int rightMotorPin2   = 27;
 
 const int PWMFreq                   = 1000; /* 1 KHz */
 const int PWMResolution             = 8;
-const int rightMotorPWMSpeedChannel = 1;
 const int leftMotorPWMSpeedChannel  = 0;
+const int rightMotorPWMSpeedChannel = 1;
 
-#define SIGNAL_TIMEOUT 1000  // This is signal timeout in milli seconds. We will reset the data if no signal
-unsigned long lastRecvTime = 0;
+volatile unsigned long lastRecvTime = 0;
 
 struct PacketData
 {
@@ -34,25 +36,8 @@ struct PacketData
 };
 PacketData receiverData;
 
-
-void rotateMotor(int rightMotorSpeed, int leftMotorSpeed)
+void rotateMotor(int leftMotorSpeed, int rightMotorSpeed)
 {
-  if (rightMotorSpeed < 0)
-  {
-    digitalWrite(rightMotorPin1,LOW);
-    digitalWrite(rightMotorPin2,HIGH);    
-  }
-  else if (rightMotorSpeed > 0)
-  {
-    digitalWrite(rightMotorPin1,HIGH);
-    digitalWrite(rightMotorPin2,LOW);      
-  }
-  else
-  {
-    digitalWrite(rightMotorPin1,LOW);
-    digitalWrite(rightMotorPin2,LOW);      
-  }
-  
   if (leftMotorSpeed < 0)
   {
     digitalWrite(leftMotorPin1,LOW);
@@ -69,27 +54,43 @@ void rotateMotor(int rightMotorSpeed, int leftMotorSpeed)
     digitalWrite(leftMotorPin2,LOW);      
   } 
 
-  ledcWrite(rightMotorPWMSpeedChannel, abs(rightMotorSpeed));
+  if (rightMotorSpeed < 0)
+  {
+    digitalWrite(rightMotorPin1,LOW);
+    digitalWrite(rightMotorPin2,HIGH);    
+  }
+  else if (rightMotorSpeed > 0)
+  {
+    digitalWrite(rightMotorPin1,HIGH);
+    digitalWrite(rightMotorPin2,LOW);      
+  }
+  else
+  {
+    digitalWrite(rightMotorPin1,LOW);
+    digitalWrite(rightMotorPin2,LOW);      
+  }
+  
   ledcWrite(leftMotorPWMSpeedChannel, abs(leftMotorSpeed));    
+  ledcWrite(rightMotorPWMSpeedChannel, abs(rightMotorSpeed));
 }
 
 void setUpPinModes()
 {
   pinMode(enablePin,OUTPUT);
 
-  pinMode(enableRightMotor,OUTPUT);
-  pinMode(rightMotorPin1,OUTPUT);
-  pinMode(rightMotorPin2,OUTPUT);
-  
   pinMode(enableLeftMotor,OUTPUT);
   pinMode(leftMotorPin1,OUTPUT);
   pinMode(leftMotorPin2,OUTPUT);
 
+  pinMode(enableRightMotor,OUTPUT);
+  pinMode(rightMotorPin1,OUTPUT);
+  pinMode(rightMotorPin2,OUTPUT);
+  
   //Set up PWM for motor speed
-  ledcSetup(rightMotorPWMSpeedChannel, PWMFreq, PWMResolution);
   ledcSetup(leftMotorPWMSpeedChannel, PWMFreq, PWMResolution);  
-  ledcAttachPin(enableRightMotor, rightMotorPWMSpeedChannel);
+  ledcSetup(rightMotorPWMSpeedChannel, PWMFreq, PWMResolution);
   ledcAttachPin(enableLeftMotor, leftMotorPWMSpeedChannel); 
+  ledcAttachPin(enableRightMotor, rightMotorPWMSpeedChannel);
   
   rotateMotor(0, 0);
 }
@@ -112,9 +113,12 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
     return;
   }
   memcpy(&receiverData, incomingData, sizeof(receiverData));
+
+#if DEBUG  
   String inputData ;
   inputData = inputData + "values " + receiverData.xAxisValue + "  " + receiverData.yAxisValue;
   Serial.println(inputData);
+#endif
 
   if (receiverData.yAxisValue <= 75)       //Move car Forward
   {
@@ -126,13 +130,13 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
   }
   else if (receiverData.xAxisValue >= 175)  //Move car Right
   {
-    int leftMotorSpeed = constrain(receiverData.xAxisValue, 0, 255);
-    rotateMotor(0, leftMotorSpeed);
+    int leftMotorSpeed = constrain(receiverData.xAxisValue, 0, MAX_MOTOR_SPEED);
+    rotateMotor(leftMotorSpeed, 0);
   }
   else if (receiverData.xAxisValue <= 75)   //Move car Left
   {
-    int rightMotorSpeed = constrain(receiverData.xAxisValue, 0, 255);
-    rotateMotor(MAX_MOTOR_SPEED - rightMotorSpeed, 0);
+    int rightMotorSpeed = constrain(255 - receiverData.xAxisValue, 0, MAX_MOTOR_SPEED);
+    rotateMotor(0, rightMotorSpeed);
   }
   else                                      //Stop the car
   {

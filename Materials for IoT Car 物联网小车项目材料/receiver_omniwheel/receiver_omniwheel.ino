@@ -177,7 +177,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
   Serial.println(inputData);
 #endif
 
-  if (receiverData.zAxisValue <= 50)       //Move the car forward
+  if (receiverData.zAxisValue <= 50)       //Rotate the car around the center
   {
     // F_x = 0, F_y = 0, F_w = motorSpeed
     // F_A = 0.3333 * motorSpeed, F_B = 0.3333 * motorSpeed, F_C = 0.3333 * motorSpeed 
