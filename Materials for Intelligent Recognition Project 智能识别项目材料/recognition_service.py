@@ -2,7 +2,7 @@ import os, io
 from flask import Flask, request
 import numpy as np
 import cv2
-from PPOCR_api import PPOCR
+from PPOCR_api import GetOcrApi
 import tempfile
 import logging
 import urllib
@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Initialize the Flask application
 app = Flask(__name__)
-ocr = PPOCR('E:\\PaddleOCR-json.v1.2.1\\PaddleOCR_json.exe')
+ocr = GetOcrApi('D:\\PaddleOCR-json_v.1.3.1\\PaddleOCR-json.exe')
 
 # route http posts to this method
 @app.route('/', methods=['POST'])
@@ -21,6 +21,12 @@ def test():
     nparr = np.frombuffer(request.data, np.uint8)
     # decode image
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    cv2.imshow('Image Title', image)
+    # Wait for a key press
+    cv2.waitKey(0)
+    # Destroy all OpenCV windows
+    cv2.destroyAllWindows()
 
     # do some fancy processing here....
     temp = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)     
@@ -48,9 +54,14 @@ def test():
     np.save(buffer, image)
     img_bytes = buffer.getvalue()
     
+    """
     return img_bytes, {'Content-Type': 'image/jpeg', 
                        'Content-Length': len(img_bytes),
                        'Text-Data': urllib.parse.quote(all_text)}
+    """
+    
+    return all_text, {'Content-Type': 'image/jpeg', 
+                      'Content-Length': len(all_text)}
 
 # start flask app
 app.run(host="0.0.0.0", port=5000)
